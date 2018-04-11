@@ -17569,6 +17569,10 @@ with pkgs;
 
   slrn = callPackage ../applications/networking/newsreaders/slrn { };
 
+  sndio = callPackage ../applications/audio/sndio { 
+     inherit (darwin.apple_sdk.frameworks) CoreAudio;
+  };
+
   sniproxy = callPackage ../applications/networking/sniproxy { };
 
   sooperlooper = callPackage ../applications/audio/sooperlooper { };
