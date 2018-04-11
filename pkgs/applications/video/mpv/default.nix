@@ -28,6 +28,7 @@
 , speexSupport       ? true,  speex         ? null
 , theoraSupport      ? true,  libtheora     ? null
 , pulseSupport       ? true,  libpulseaudio ? null
+, sndioSupport       ? true,  sndio         ? null
 , bs2bSupport        ? true,  libbs2b       ? null
 , cacaSupport        ? true,  libcaca       ? null
 , libpngSupport      ? true,  libpng        ? null
@@ -61,6 +62,7 @@ assert speexSupport       -> available speex;
 assert theoraSupport      -> available libtheora;
 assert openalSupport      -> available openalSoft;
 assert pulseSupport       -> available libpulseaudio;
+assert sndioSupport       -> available sndio;
 assert bs2bSupport        -> available libbs2b;
 assert cacaSupport        -> available libcaca;
 assert libpngSupport      -> available libpng;
@@ -109,6 +111,7 @@ in stdenv.mkDerivation rec {
     (enableFeature dvdreadSupport "dvdread")
     (enableFeature dvdnavSupport "dvdnav")
     (enableFeature openalSupport "openal")
+    (enableFeature sndioSupport "sndio")
     (enableFeature vaapiSupport "vaapi")
     (enableFeature waylandSupport "wayland")
     (enableFeature stdenv.isLinux "dvbin")
@@ -134,6 +137,7 @@ in stdenv.mkDerivation rec {
     ++ optional bluraySupport      libbluray
     ++ optional jackaudioSupport   libjack2
     ++ optional pulseSupport       libpulseaudio
+    ++ optional sndioSupport       sndio
     ++ optional rubberbandSupport  rubberband
     ++ optional screenSaverSupport libXScrnSaver
     ++ optional vdpauSupport       libvdpau
