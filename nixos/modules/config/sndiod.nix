@@ -34,7 +34,8 @@ in {
     users.extraUsers.sndiod = {
       home = sndioRuntimePath;
       isSystemUser = true;
-      description = "non-privileged user for sndio daemon";
+      description = "sndio daemon";
+      shell = "${pkgs.shadow}/bin/nologin";
       group = "audio";
     };
 
@@ -45,6 +46,10 @@ in {
           Description = "sndio audio and MIDI server";
           After = [ "network.target" ];
         };
+        preStart = ''
+          mkdir -p --mode 755 ${sndioRuntimePath}
+          chown -R sndiod:audio ${sndioRuntimePath}
+        '';
         serviceConfig = {
           Type = "forking";
           Restart = "on-abort";
