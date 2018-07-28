@@ -13412,6 +13412,8 @@ with pkgs;
 
   alsa-firmware = callPackage ../os-specific/linux/alsa-firmware { };
 
+  alsa-sndio = callPackage ../applications/audio/alsa-sndio/default.nix { };
+
   alsaLib = callPackage ../os-specific/linux/alsa-lib { };
 
   alsaPlugins = callPackage ../os-specific/linux/alsa-plugins { };
