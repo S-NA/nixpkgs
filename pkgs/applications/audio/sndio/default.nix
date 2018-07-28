@@ -11,9 +11,25 @@ in stdenv.mkDerivation rec {
     sha256 = "10cpixvxc22ypknhh19lv81hiysl82rf2k0gkkvbyzbr4jv3swb8";
   };
 
+  outputs = [ "bin" "lib" "dev" "doc" "out" ];
+
   buildInputs = [ ]
     ++ optional stdenv.isLinux alsaLib
     ++ optional stdenv.isDarwin CoreAudio;
+
+  # When defining outputs, a set of flags are automatically enabled.
+  # For the most part this is useful; however, some of these flags cause the
+  # configure script to return a status code of an error due to not being
+  # flags which are undefined. To work around this we patch out the unknown
+  # flags case in the switch statement.
+  preConfigure = ''
+    sed -i s/help$//g configure
+    sed -i 's/exit 1$//g' configure
+  '';
+
+  configureFlags = [
+    "--mandir=$(doc)/man"
+  ];
 
   meta = with stdenv.lib; {
     description = "Small audio and MIDI framework from the OpenBSD project";
