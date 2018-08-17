@@ -46,6 +46,7 @@ in {
           Description = "sndio audio and MIDI server";
           After = [ "network.target" ];
         };
+        wantedBy = [ "multi-user.target" ];
         preStart = ''
           mkdir -p --mode 755 ${sndioRuntimePath}
           chown -R sndiod:audio ${sndioRuntimePath}
