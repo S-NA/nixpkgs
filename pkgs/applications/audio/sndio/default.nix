@@ -5,10 +5,10 @@ let
 
 in stdenv.mkDerivation rec {
   name = "sndio-${version}";
-  version = "1.4.0";
+  version = "1.5.0";
   src = fetchurl {
     url = "http://www.sndio.org/sndio-${version}.tar.gz";
-    sha256 = "10cpixvxc22ypknhh19lv81hiysl82rf2k0gkkvbyzbr4jv3swb8";
+    sha256 = "0lyjb962w9qjkm3yywdywi7k2sxa2rl96v5jmrzcpncsfi201iqj";
   };
 
   outputs = [ "bin" "lib" "dev" "doc" "out" ];
