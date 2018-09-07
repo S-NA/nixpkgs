@@ -16,11 +16,11 @@ with stdenv.lib;
 buildPythonApplication rec {
 
   pname = "youtube-dl";
-  version = "2018.05.01";
+  version = "2018.09.01";
 
   src = fetchurl {
     url = "https://yt-dl.org/downloads/${version}/${pname}-${version}.tar.gz";
-    sha256 = "1mpyqdyjip5a6nn8lj1kaaab4pj75js6i8qzgap8bmn0k46awb1n";
+    sha256 = "0h8x8agl4s5cnfzwmshbcg4pxcgg3iyb86w8krs21y2k9d1ng036";
   };
 
   nativeBuildInputs = [ makeWrapper ];
