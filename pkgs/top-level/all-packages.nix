@@ -14747,6 +14747,8 @@ with pkgs;
 
   stellar-core = self.altcoins.stellar-core;
 
+  aucatctl = callPackage ../applications/audio/aucatctl { };
+
   aumix = callPackage ../applications/audio/aumix {
     gtkGUI = false;
   };
