@@ -3535,6 +3535,8 @@ in
 
   icoutils = callPackage ../tools/graphics/icoutils { };
 
+  ideviceinstaller = callPackage ../tools/misc/ideviceinstaller { };
+
   idutils = callPackage ../tools/misc/idutils { };
 
   idle3tools = callPackage ../tools/system/idle3tools { };
@@ -3542,7 +3544,8 @@ in
   iftop = callPackage ../tools/networking/iftop { };
 
   ifuse = callPackage ../tools/filesystems/ifuse { };
-  ideviceinstaller = callPackage ../tools/misc/ideviceinstaller { };
+
+  infer = callPackage ../development/tools/infer { };
 
   inherit (callPackages ../tools/filesystems/irods rec {
             stdenv = llvmPackages_38.libcxxStdenv;
