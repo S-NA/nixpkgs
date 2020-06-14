@@ -11332,6 +11332,8 @@ in
     stdenv = gcc8Stdenv;
   };
 
+  libbde = callPackage ../development/libraries/libbde { };
+
   libbfd = callPackage ../development/libraries/libbfd { };
 
   libopcodes = callPackage ../development/libraries/libopcodes { };
