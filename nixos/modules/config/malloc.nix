@@ -30,6 +30,13 @@ let
         vulnerabilities, while maintaining good performance.
       '';
     };
+
+    mimalloc = {
+      libPath = "${pkgs.mimalloc}/lib/libmimalloc.so";
+      description = ''
+        A general purpose allocator with excellent performance characteristics.
+      '';
+    };
   };
 
   providerConf = providers.${cfg.provider};
