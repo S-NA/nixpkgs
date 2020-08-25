@@ -9,7 +9,7 @@
 , hunspell, libXdamage, libevent, libstartup_notification
 , libvpx_1_8
 , icu67, libpng, jemalloc, glib
-, autoconf213, which, gnused, cargo, rustc, llvmPackages
+, autoconf213, which, gnused, cargo, rustc
 , rust-cbindgen, nodejs, nasm, fetchpatch
 , debugBuild ? false
 
@@ -19,10 +19,13 @@
 
 , alsaSupport ? stdenv.isLinux, alsaLib
 , pulseaudioSupport ? stdenv.isLinux, libpulseaudio
+, sndioSupport ? false, sndio
 , ffmpegSupport ? true
 , gtk3Support ? true, gtk2, gtk3, wrapGAppsHook
 , waylandSupport ? true, libxkbcommon
 , gssSupport ? true, kerberos
+, ltoSupport ? false, overrideCC, buildPackages
+, jemallocSupport ? true, jemalloc
 
 ## privacy-related options
 
@@ -84,9 +87,18 @@ let
   execdir = if stdenv.isDarwin
             then "/Applications/${binaryNameCapitalized}.app/Contents/MacOS"
             else "/bin";
+
+  llvmPackages = buildPackages.llvmPackages_10;
+
+  buildStdenv = if ltoSupport then
+    overrideCC stdenv llvmPackages.lldClang
+  else
+    stdenv;
 in
 
-stdenv.mkDerivation ({
+assert llvmPackages.libunwind.out or null != null;
+
+buildStdenv.mkDerivation ({
   name = "${pname}-unwrapped-${ffversion}";
   version = ffversion;
 
@@ -94,7 +106,17 @@ stdenv.mkDerivation ({
 
   patches = [
     ./env_var_for_system_dir.patch
-  ]
+    (fetchpatch {
+      name   = "0003-Fortify-sources-properly.patch";
+      url    = "https://gist.githubusercontent.com/S-NA/b8ed8fe9b1cb2b56d92f7201a11c4ad7/raw/d8ab846bba8920a17f344c96695ef31835a2f67f/0003-Fortify-sources-properly.patch";
+      sha256 = "1hfvw7djs7bcxwhx04grjcwsfyff595bkh1694r6mwbia81wrirq";
+    })
+  ] ++
+  lib.optional sndioSupport (fetchpatch {
+    name   = "firefox-sndio-linux.patch";
+    url    = "https://gist.githubusercontent.com/S-NA/b8ed8fe9b1cb2b56d92f7201a11c4ad7/raw/d8ab846bba8920a17f344c96695ef31835a2f67f/firefox-sndio-linux.patch";
+    sha256 = "19w49izfr8hxkjq57lkh5cvkpbpn94v3cx6i13a31dggm93r2hwf";
+  })
   ++ patches;
 
 
@@ -111,7 +133,7 @@ stdenv.mkDerivation ({
     xorg.xorgproto
     xorg.libXext unzip makeWrapper
     libevent libstartup_notification /* cairo */
-    libpng jemalloc glib
+    libpng glib
     nasm icu67 libvpx_1_8
     # >= 66 requires nasm for the AV1 lib dav1d
     # yasm can potentially be removed in future versions
@@ -121,12 +143,20 @@ stdenv.mkDerivation ({
   ]
   ++ lib.optional  alsaSupport alsaLib
   ++ lib.optional  pulseaudioSupport libpulseaudio # only headers are needed
+  ++ lib.optional  sndioSupport sndio
   ++ lib.optional  gtk3Support gtk3
   ++ lib.optional  gssSupport kerberos
+  ++ lib.optional  ltoSupport llvmPackages.libunwind
+  ++ lib.optional  jemallocSupport jemalloc
   ++ lib.optional  waylandSupport libxkbcommon
-  ++ lib.optionals stdenv.isDarwin [ CoreMedia ExceptionHandling Kerberos
+  ++ lib.optionals buildStdenv.isDarwin [ CoreMedia ExceptionHandling Kerberos
                                      AVFoundation MediaToolbox CoreLocation
                                      Foundation libobjc AddressBook cups ];
+
+  NIX_LDFLAGS = lib.optionalString ltoSupport ''
+    -rpath ${placeholder "out"}/lib/${binaryName}
+    -rpath ${llvmPackages.libunwind.out}/lib
+  '';
 
   NIX_CFLAGS_COMPILE = toString [
     "-I${glib.dev}/include/gio-unix-2.0"
@@ -161,7 +191,7 @@ stdenv.mkDerivation ({
       which
     ]
     ++ lib.optional gtk3Support wrapGAppsHook
-    ++ lib.optionals stdenv.isDarwin [ xcbuild rsync ]
+    ++ lib.optionals buildStdenv.isDarwin [ xcbuild rsync ]
     ++ extraNativeBuildInputs;
 
   preConfigure = ''
@@ -179,12 +209,12 @@ stdenv.mkDerivation ({
     # included we need to look in a few places.
     # TODO: generalize this process for other use-cases.
 
-    BINDGEN_CFLAGS="$(< ${stdenv.cc}/nix-support/libc-crt1-cflags) \
-      $(< ${stdenv.cc}/nix-support/libc-cflags) \
-      $(< ${stdenv.cc}/nix-support/cc-cflags) \
-      $(< ${stdenv.cc}/nix-support/libcxx-cxxflags) \
-      ${lib.optionalString stdenv.cc.isClang "-idirafter ${stdenv.cc.cc}/lib/clang/${lib.getVersion stdenv.cc.cc}/include"} \
-      ${lib.optionalString stdenv.cc.isGNU "-isystem ${stdenv.cc.cc}/include/c++/${lib.getVersion stdenv.cc.cc} -isystem ${stdenv.cc.cc}/include/c++/${lib.getVersion stdenv.cc.cc}/${stdenv.hostPlatform.config}"} \
+    BINDGEN_CFLAGS="$(< ${buildStdenv.cc}/nix-support/libc-crt1-cflags) \
+      $(< ${buildStdenv.cc}/nix-support/libc-cflags) \
+      $(< ${buildStdenv.cc}/nix-support/cc-cflags) \
+      $(< ${buildStdenv.cc}/nix-support/libcxx-cxxflags) \
+      ${lib.optionalString buildStdenv.cc.isClang "-idirafter ${buildStdenv.cc.cc}/lib/clang/${lib.getVersion buildStdenv.cc.cc}/include"} \
+      ${lib.optionalString buildStdenv.cc.isGNU "-isystem ${buildStdenv.cc.cc}/include/c++/${lib.getVersion buildStdenv.cc.cc} -isystem ${buildStdenv.cc.cc}/include/c++/${lib.getVersion buildStdenv.cc.cc}/${buildStdenv.hostPlatform.config}"} \
       $NIX_CFLAGS_COMPILE"
 
     echo "ac_add_options BINDGEN_CFLAGS='$BINDGEN_CFLAGS'" >> $MOZCONFIG
@@ -196,6 +226,17 @@ stdenv.mkDerivation ({
     # 60.5+ & 66+ did split the google API key arguments: https://bugzilla.mozilla.org/show_bug.cgi?id=1531176
     configureFlagsArray+=("--with-google-location-service-api-keyfile=$TMPDIR/ga")
     configureFlagsArray+=("--with-google-safebrowsing-api-keyfile=$TMPDIR/ga")
+  '')
+  + (lib.optionalString sndioSupport ''
+    substituteInPlace media/libcubeb/src/cubeb_sndio.c \
+      --replace '"libsndio.so.7.0"' '"${sndio}/lib/libsndio.so.7.1"' \
+      --replace '"libsndio.so"' '"${sndio}/lib/libsndio.so"'
+
+    substituteInPlace third_party/rust/cubeb-sys/libcubeb/src/cubeb_sndio.c \
+      --replace '"libsndio.so.7.0"' '"${sndio}/lib/libsndio.so.7.1"' \
+      --replace '"libsndio.so"' '"${sndio}/lib/libsndio.so"'
+
+    sed -i 's/\("files":{\)[^}]*/\1/' third_party/rust/cubeb-sys/.cargo-checksum.json || exit 1
   '') + ''
     # AS=as in the environment causes build failure https://bugzilla.mozilla.org/show_bug.cgi?id=1497286
     unset AS
@@ -203,6 +244,7 @@ stdenv.mkDerivation ({
 
   configureFlags = [
     "--enable-application=browser"
+    "--enable-rust-simd"
     "--with-system-jpeg"
     "--with-system-zlib"
     "--with-system-libevent"
@@ -215,19 +257,38 @@ stdenv.mkDerivation ({
     "--disable-tests"
     "--disable-necko-wifi" # maybe we want to enable this at some point
     "--disable-updater"
-    "--enable-jemalloc"
     "--enable-default-toolkit=${default-toolkit}"
     "--with-libclang-path=${llvmPackages.libclang}/lib"
-    "--with-clang-path=${llvmPackages.clang}/bin/clang"
     "--with-system-nspr"
     "--with-system-nss"
   ]
   ++ lib.optional (stdenv.isDarwin) "--disable-xcode-checks"
-
+  ++ lib.optional (!ltoSupport) "--with-clang-path=${llvmPackages.clang}/bin/clang"
+  ++ lib.optionals (lib.versionOlder ffversion "78") [
+    "--with-system-bz2"
+    "--enable-startup-notification"
+    "--disable-gconf"
+  ]
+  # LTO is done using clang and lld.
+  # elf-hack is broken when using clang:
+  # https://bugzilla.mozilla.org/show_bug.cgi?id=1482204
+  # https://bugzilla.mozilla.org/show_bug.cgi?id=1483822
+  ++ lib.optionals ltoSupport [
+    "--enable-lto"
+    "--enable-linker=lld"
+    "--disable-elf-hack"
+  ]
+  ++ lib.optional (lib.versionOlder ffversion "75") "--enable-system-sqlite"
+  ++ lib.optional (buildStdenv.isDarwin) "--disable-xcode-checks"
+  ++ lib.optionals (lib.versionOlder ffversion "69") [
+    "--enable-webrender=build"
+  ]
   ++ flag alsaSupport "alsa"
   ++ flag pulseaudioSupport "pulseaudio"
+  ++ lib.optional sndioSupport "--enable-sndio"
   ++ flag ffmpegSupport "ffmpeg"
   ++ flag gssSupport "negotiateauth"
+  ++ flag jemallocSupport "jemalloc"
   ++ flag webrtcSupport "webrtc"
   ++ flag crashreporterSupport "crashreporter"
   ++ lib.optional drmSupport "--enable-eme=widevine"
@@ -252,12 +313,12 @@ stdenv.mkDerivation ({
   enableParallelBuilding = true;
   doCheck = false; # "--disable-tests" above
 
-  installPhase = if stdenv.isDarwin then ''
+  installPhase = if buildStdenv.isDarwin then ''
     mkdir -p $out/Applications
     cp -LR dist/${binaryNameCapitalized}.app $out/Applications
   '' else null;
 
-  postInstall = lib.optionalString stdenv.isLinux ''
+  postInstall = lib.optionalString buildStdenv.isLinux ''
     # Remove SDK cruft. FIXME: move to a separate output?
     rm -rf $out/share/idl $out/include $out/lib/${binaryName}-devel-*
 
@@ -265,7 +326,7 @@ stdenv.mkDerivation ({
     gappsWrapperArgs+=(--argv0 "$out/bin/.${binaryName}-wrapped")
   '';
 
-  postFixup = lib.optionalString stdenv.isLinux ''
+  postFixup = lib.optionalString buildStdenv.isLinux ''
     # Fix notifications. LibXUL uses dlopen for this, unfortunately; see #18712.
     patchelf --set-rpath "${lib.getLib libnotify
       }/lib:$(patchelf --print-rpath "$out"/lib/${binaryName}*/libxul.so)" \
@@ -292,17 +353,7 @@ stdenv.mkDerivation ({
   } // lib.optionalAttrs gtk3Support { inherit gtk3; };
 
   hardeningDisable = [ "format" ]; # -Werror=format-security
-
-  # the build system verifies checksums of the bundled rust sources
-  # ./third_party/rust is be patched by our libtool fixup code in stdenv
-  # unfortunately we can't just set this to `false` when we do not want it.
-  # See https://github.com/NixOS/nixpkgs/issues/77289 for more details
-  # Ideally we would figure out how to tell the build system to not
-  # care about changed hashes as we are already doing that when we
-  # fetch the sources. Any further modifications of the source tree
-  # is on purpose by some of our tool (or by accident and a bug?).
-  dontFixLibtool = true;
-
-  # on aarch64 this is also required
-  dontUpdateAutotoolsGnuConfigScripts = true;
 })
+# the build system verifies checksums of the bundled rust sources
+# ./third_party/rust is be patched by our libtool fixup code in buildStdenv
+# -- why stop fixup code and not work around the checksums? see sndio example
