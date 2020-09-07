@@ -39,6 +39,14 @@ qtModule {
   hardeningDisable = [ "format" ];
 
   patches = [
+    # add sndio support
+    (fetchpatch {
+      name = "qt5-webengine-sndio.patch";
+      url = "https://gist.githubusercontent.com/S-NA/273736b7b345c24deb52b4504ae011ac/raw/2c8d050cbebf8edccbbe8058b130600db735149a/qt5-webengine-sndio.patch";
+      sha256 = lib.fakeSha256;
+      stripLen = 1;
+      extraPrefix = "src/3rdparty/";
+    })
     # Fix build with bison-3.7: https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?id=1a53f599
     (fetchpatch {
       name = "qtwebengine-bison-3.7-build.patch";
@@ -136,7 +144,8 @@ qtModule {
 
   qmakeFlags = if stdenv.hostPlatform.isAarch32 || stdenv.hostPlatform.isAarch64
     then [ "--" "-system-ffmpeg" ] ++ optional enableProprietaryCodecs "-proprietary-codecs"
-    else optional enableProprietaryCodecs "-- -proprietary-codecs";
+    else optional enableProprietaryCodecs "-- -proprietary-codecs"
+    ++ optional !stdenv.isDarwin "-sndio";
 
   propagatedBuildInputs = [
     # Image formats
@@ -159,6 +168,7 @@ qtModule {
 
     # Audio formats
     alsaLib
+    sndio
 
     # Text rendering
     fontconfig freetype
