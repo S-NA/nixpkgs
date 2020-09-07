@@ -29,6 +29,7 @@
 , wayland-protocols
 , enableAlsa ? stdenv.isLinux
 , alsaLib
+, sndio
 # Enabling Cocoa seems to currently not work, giving compile
 # errors. Suspected is that a newer version than clang
 # is needed than 5.0 but it is not clear.
@@ -53,6 +54,7 @@ stdenv.mkDerivation rec {
 
   patches = [
     ./fix_pkgconfig_includedir.patch
+    ./gst-plugins-base-sndio.patch
   ];
 
   nativeBuildInputs = [
@@ -81,6 +83,7 @@ stdenv.mkDerivation rec {
     libjpeg
     tremor
     libGL
+    sndio
   ] ++ lib.optional (!stdenv.isDarwin) [
     libvisual
   ] ++ lib.optionals stdenv.isDarwin [
