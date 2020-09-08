@@ -8,6 +8,7 @@
 , zlib, minizip, libjpeg, libpng, libtiff, libwebp, libopus
 , jsoncpp, protobuf, libvpx, srtp, snappy, nss, libevent
 , alsaLib
+, sndio
 , libcap
 , pciutils
 , systemd
@@ -43,9 +44,15 @@ qtModule {
     (fetchpatch {
       name = "qt5-webengine-sndio.patch";
       url = "https://gist.githubusercontent.com/S-NA/273736b7b345c24deb52b4504ae011ac/raw/2c8d050cbebf8edccbbe8058b130600db735149a/qt5-webengine-sndio.patch";
-      sha256 = lib.fakeSha256;
+      sha256 = "1g0nizswfz2fhvji15kxlzv5nvv36aav0id8z6y2dq6ig2ypzz38";
       stripLen = 1;
       extraPrefix = "src/3rdparty/";
+    })
+    (fetchpatch {
+       name = "qt5-qtwebengine-sndio-patch-non-3rdparty.patch";
+       url = "https://gist.githubusercontent.com/S-NA/273736b7b345c24deb52b4504ae011ac/raw/7b6177ed928f10e5032c63cd231ce4008953a00b/qt5-qtwebengine-sndio-patch-non-3rdparty.patch";
+       sha256 = "1gbacw761886v9chvfjpl7mmb41mr8dkw2qdx5q74rz5562iaaaa";
+       stripLen = 1;
     })
     # Fix build with bison-3.7: https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?id=1a53f599
     (fetchpatch {
@@ -145,7 +152,7 @@ qtModule {
   qmakeFlags = if stdenv.hostPlatform.isAarch32 || stdenv.hostPlatform.isAarch64
     then [ "--" "-system-ffmpeg" ] ++ optional enableProprietaryCodecs "-proprietary-codecs"
     else optional enableProprietaryCodecs "-- -proprietary-codecs"
-    ++ optional !stdenv.isDarwin "-sndio";
+    ++ optional (!stdenv.isDarwin) "-sndio";
 
   propagatedBuildInputs = [
     # Image formats
