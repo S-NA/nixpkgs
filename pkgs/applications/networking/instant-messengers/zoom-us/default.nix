@@ -6,8 +6,8 @@
 , qtquickcontrols2, qtscript, qtsvg , qttools, qtwayland, qtwebchannel
 , qtwebengine
 # Runtime
-, coreutils, faac, pciutils, procps, utillinux
-, pulseaudioSupport ? true, libpulseaudio ? null
+, coreutils, faac, pciutils, procps, utillinux, gst_all_1
+, pulseaudioSupport ? false, libpulseaudio ? null
 }:
 
 assert pulseaudioSupport -> libpulseaudio != null;
@@ -43,9 +43,11 @@ in mkDerivation {
     dbus glib libGL libX11 libXfixes libuuid libxcb faac qtbase
     qtdeclarative qtgraphicaleffects qtlocation qtquickcontrols qtquickcontrols2
     qtscript qtwebchannel qtwebengine qtimageformats qtsvg qttools qtwayland
-  ];
+  ]
+  ++ (with gst_all_1; [ gstreamer gst-plugins-base gst-plugins-good ]);
 
-  runtimeDependencies = optional pulseaudioSupport libpulseaudio;
+  runtimeDependencies = optional pulseaudioSupport libpulseaudio
+    ++ (with gst_all_1; [ gstreamer gst-plugins-base gst-plugins-good ]);
 
   installPhase =
     let
@@ -103,7 +105,8 @@ in mkDerivation {
   dontWrapQtApps = true;
 
   qtWrapperArgs = [
-    ''--prefix PATH : ${makeBinPath [ coreutils glib.dev pciutils procps qttools.dev utillinux ]}''
+    ''--prefix PATH : ${makeBinPath [ coreutils glib.dev pciutils procps qttools.dev utillinux gst_all_1.gstreamer.dev ]}''
+    ''--prefix GST_PLUGIN_SYSTEM_PATH : "$GST_PLUGIN_SYSTEM_PATH"''
     # --run "cd ${placeholder "out"}/share/zoom-us"
     # ^^ unfortunately, breaks run arg into multiple array elements, due to
     # some bad array propagation. We'll do that in bash below
