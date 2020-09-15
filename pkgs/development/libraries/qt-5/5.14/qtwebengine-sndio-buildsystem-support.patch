@@ -1,0 +1,74 @@
+diff --git a/src/buildtools/config/linux.pri b/src/buildtools/config/linux.pri
+index ee08f81b..3c62c838 100644
+--- a/src/buildtools/config/linux.pri
++++ b/src/buildtools/config/linux.pri
+@@ -190,6 +190,11 @@ host_build {
+     } else {
+         gn_args += use_alsa=false
+     }
++    qtConfig(webengine-sndio) {
++       gn_args += use_sndio=true
++    } else {
++       gn_args += use_sndio=true
++    }
+     !packagesExist(libpci): gn_args += use_libpci=false
+ 
+     qtConfig(webengine-ozone-x11) {
+diff --git a/src/core/configure.json b/src/core/configure.json
+index 9059575b..083f2582 100644
+--- a/src/core/configure.json
++++ b/src/core/configure.json
+@@ -21,6 +21,7 @@
+             "webengine-printing-and-pdf": "boolean",
+             "webengine-proprietary-codecs": "boolean",
+             "webengine-pulseaudio": "boolean",
++            "webengine-sndio": "boolean",
+             "webengine-spellchecker": "boolean",
+             "webengine-native-spellchecker": "boolean",
+             "webengine-extensions": "boolean",
+@@ -31,6 +32,7 @@
+             "webengine-kerberos": "boolean",
+             "alsa": { "type": "boolean", "name": "webengine-alsa" },
+             "pulseaudio": { "type": "boolean", "name": "webengine-pulseaudio" },
++            "sndio": { "type": "boolean", "name": "webengine-sndio" },
+             "ffmpeg": { "type": "enum", "name": "webengine-system-ffmpeg", "values": { "system": "yes", "qt": "no" } },
+             "opus": { "type": "enum", "name": "webengine-system-opus", "values": { "system": "yes", "qt": "no" } },
+             "webp": { "type": "enum", "name": "webengine-system-libwebp", "values": { "system": "yes", "qt": "no" } },
+@@ -68,7 +70,13 @@
+             "sources": [
+                 { "type": "pkgConfig", "args": "libpulse >= 0.9.10 libpulse-mainloop-glib" }
+             ]
+-        }
++        },
++        "webengine-sndio": {
++            "label": "sndio",
++            "sources": [
++                { "type": "pkgConfig", "args": "libsndio >= 1.5.0 libsndio" }
++            ]
++	}
+     },
+     "tests" : {
+         "webengine-host-compiler": {
+@@ -136,6 +144,10 @@
+             "condition": "libs.webengine-pulseaudio",
+             "output": [ "privateFeature" ]
+         },
++	"webengine-sndio": {
++            "label": "Use sndio",
++            "output": [ "privateFeature" ]
++        },
+         "webengine-pepper-plugins": {
+             "label": "Pepper Plugins",
+             "purpose": "Enables use of Pepper Flash plugins.",
+@@ -307,6 +319,11 @@
+                     "args": "webengine-pulseaudio",
+                     "condition": "config.unix"
+                 },
++                {
++                   "type": "feature",
++                   "args": "webengine-sndio",
++                   "condition": "config.unix"
++                },
+                 {
+                     "type": "feature",
+                     "args": "webengine-sanitizer",

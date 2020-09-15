@@ -39,6 +39,10 @@ qtModule {
   # which cannot be set at the same time as -Wformat-security
   hardeningDisable = [ "format" ];
 
+  prePatch = ''
+    mkdir -p src/3rdparty/chromium/media/audio/{sndio,openbsd}
+  '';
+
   patches = [
     # add sndio support
     (fetchpatch {
@@ -48,12 +52,12 @@ qtModule {
       stripLen = 1;
       extraPrefix = "src/3rdparty/";
     })
-    (fetchpatch {
-       name = "qt5-qtwebengine-sndio-patch-non-3rdparty.patch";
-       url = "https://gist.githubusercontent.com/S-NA/273736b7b345c24deb52b4504ae011ac/raw/7b6177ed928f10e5032c63cd231ce4008953a00b/qt5-qtwebengine-sndio-patch-non-3rdparty.patch";
-       sha256 = "1gbacw761886v9chvfjpl7mmb41mr8dkw2qdx5q74rz5562iaaaa";
-       stripLen = 1;
-    })
+#    (fetchpatch {
+#       name = "qt5-qtwebengine-sndio-patch-non-3rdparty.patch";
+#       url = "https://gist.githubusercontent.com/S-NA/273736b7b345c24deb52b4504ae011ac/raw/7b6177ed928f10e5032c63cd231ce4008953a00b/qt5-qtwebengine-sndio-patch-non-3rdparty.patch";
+#       sha256 = "140700ys4cqcjq7k3cij75qg3s6zkr5lq38y53zwfv6016w0k4bx";
+#       stripLen = 1;
+#    })
     # Fix build with bison-3.7: https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?id=1a53f599
     (fetchpatch {
       name = "qtwebengine-bison-3.7-build.patch";
@@ -62,7 +66,9 @@ qtModule {
       stripLen = 1;
       extraPrefix = "src/3rdparty/";
     })
-  ];
+  ] ++ optional (lib.versionAtLeast qtCompatVersion "5.14" && lib.versionOlder qtCompatVersion "5.15") ../5.14/qtwebengine-sndio-buildsystem-support.patch
+    ++ optional (lib.versionAtLeast qtCompatVersion "5.15") ../5.15/qtwebengine-sndio-buildsystem-support.patch;
+
 
   postPatch =
     # Patch Chromium build tools

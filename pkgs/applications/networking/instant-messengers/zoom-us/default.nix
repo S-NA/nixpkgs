@@ -6,11 +6,8 @@
 , qtquickcontrols2, qtscript, qtsvg , qttools, qtwayland, qtwebchannel
 , qtwebengine
 # Runtime
-, coreutils, faac, pciutils, procps, utillinux, gst_all_1
-, pulseaudioSupport ? false, libpulseaudio ? null
+, coreutils, faac, pciutils, procps, utillinux, libasound-sndio
 }:
-
-assert pulseaudioSupport -> libpulseaudio != null;
 
 let
   inherit (stdenv.lib) concatStringsSep makeBinPath optional;
@@ -43,11 +40,7 @@ in mkDerivation {
     dbus glib libGL libX11 libXfixes libuuid libxcb faac qtbase
     qtdeclarative qtgraphicaleffects qtlocation qtquickcontrols qtquickcontrols2
     qtscript qtwebchannel qtwebengine qtimageformats qtsvg qttools qtwayland
-  ]
-  ++ (with gst_all_1; [ gstreamer gst-plugins-base gst-plugins-good ]);
-
-  runtimeDependencies = optional pulseaudioSupport libpulseaudio
-    ++ (with gst_all_1; [ gstreamer gst-plugins-base gst-plugins-good ]);
+  ];
 
   installPhase =
     let
@@ -73,6 +66,8 @@ in mkDerivation {
 
       # TODO Patch this somehow; tries to dlopen './libturbojpeg.so' from cwd
       cp libturbojpeg.so $out/share/zoom-us/libturbojpeg.so
+
+      ln -s $(readlink -e "${libasound-sndio}/lib/libasound.so.2.0.0") $out/share/zoom-us/libasound.so.2
 
       # Again, requires faac with a nonstandard filename.
       ln -s $(readlink -e "${faac}/lib/libfaac.so") $out/share/zoom-us/libfaac1.so
@@ -105,8 +100,7 @@ in mkDerivation {
   dontWrapQtApps = true;
 
   qtWrapperArgs = [
-    ''--prefix PATH : ${makeBinPath [ coreutils glib.dev pciutils procps qttools.dev utillinux gst_all_1.gstreamer.dev ]}''
-    ''--prefix GST_PLUGIN_SYSTEM_PATH : "$GST_PLUGIN_SYSTEM_PATH"''
+    ''--prefix PATH : ${makeBinPath [ coreutils glib.dev pciutils procps qttools.dev utillinux ]}''
     # --run "cd ${placeholder "out"}/share/zoom-us"
     # ^^ unfortunately, breaks run arg into multiple array elements, due to
     # some bad array propagation. We'll do that in bash below

@@ -1,0 +1,73 @@
+diff --git a/src/core/config/linux.pri b/src/core/config/linux.pri
+index 26d0dcf7..e0f46b31 100644
+--- a/src/core/config/linux.pri
++++ b/src/core/config/linux.pri
+@@ -20,6 +20,12 @@ qtConfig(webengine-embedded-build) {
+         gn_args += use_alsa=false
+     }
+ 
++    qtConfig(webengine-sndio) {
++        gn_args += use_sndio=true
++    } else {
++        gn_args += use_sndio=false
++    }
++
+     !packagesExist(libpci): gn_args += use_libpci=false
+ 
+     qtConfig(webengine-ozone-x11) {
+diff --git a/src/core/configure.json b/src/core/configure.json
+index 4cd6174f..c8a7d22e 100644
+--- a/src/core/configure.json
++++ b/src/core/configure.json
+@@ -21,6 +21,7 @@
+             "webengine-printing-and-pdf": "boolean",
+             "webengine-proprietary-codecs": "boolean",
+             "webengine-pulseaudio": "boolean",
++            "webengine-sndio": "boolean",
+             "webengine-spellchecker": "boolean",
+             "webengine-native-spellchecker": "boolean",
+             "webengine-extensions": "boolean",
+@@ -31,6 +32,7 @@
+             "webengine-kerberos": "boolean",
+             "alsa": { "type": "boolean", "name": "webengine-alsa" },
+             "pulseaudio": { "type": "boolean", "name": "webengine-pulseaudio" },
++            "sndio": { "type": "boolean", "name": "webengine-sndio" },
+             "ffmpeg": { "type": "enum", "name": "webengine-system-ffmpeg", "values": { "system": "yes", "qt": "no" } },
+             "opus": { "type": "enum", "name": "webengine-system-opus", "values": { "system": "yes", "qt": "no" } },
+             "webp": { "type": "enum", "name": "webengine-system-libwebp", "values": { "system": "yes", "qt": "no" } },
+@@ -74,6 +76,12 @@
+             "sources": [
+                 { "type": "pkgConfig", "args": "gio-2.0" }
+             ]
++        },
++        "sndio": {
++            "label": "sndio",
++            "sources": [
++                { "type": "pkgConfig", "args": "libsndio >= 1.5.0 libsndio" }
++            ]
+         }
+     },
+     "tests" : {
+@@ -126,6 +134,10 @@
+             "condition": "libs.webengine-pulseaudio",
+             "output": [ "privateFeature" ]
+         },
++        "webengine-sndio": {
++            "label": "Use sndio",
++            "output": [ "privateFeature" ]
++        },
+         "webengine-pepper-plugins": {
+             "label": "Pepper Plugins",
+             "purpose": "Enables use of Pepper Flash plugins.",
+@@ -282,6 +294,11 @@
+                     "args": "webengine-pulseaudio",
+                     "condition": "config.unix"
+                 },
++                {
++                   "type": "feature",
++                   "args": "webengine-sndio",
++                   "condition": "config.unix"
++                },
+                 {
+                     "message": "macOS version",
+                     "type": "macosToolchainVersion",

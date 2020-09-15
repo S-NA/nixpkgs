@@ -71,7 +71,8 @@ let
     qtscript = [ ./qtscript.patch ];
     qtserialport = [ ./qtserialport.patch ];
     qtwebengine = [ ]
-      ++ optional stdenv.isDarwin ./qtwebengine-darwin-no-platform-check.patch;
+      ++ optional stdenv.isDarwin ./qtwebengine-darwin-no-platform-check.patch
+      ++ optional (!stdenv.isDarwin) ./qtwebengine-sndio-buildsystem-support.patch;
     qtwebkit = [ ./qtwebkit.patch ]
       ++ optionals stdenv.isDarwin [
         ./qtwebkit-darwin-no-readline.patch
