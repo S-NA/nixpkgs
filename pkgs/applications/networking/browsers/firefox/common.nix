@@ -8,7 +8,7 @@
 , yasm, libGLU, libGL, sqlite, unzip, makeWrapper
 , hunspell, libXdamage, libevent, libstartup_notification
 , libvpx_1_8
-, icu67, libpng, jemalloc, glib
+, icu67, libpng, glib
 , autoconf213, which, gnused, cargo, rustc
 , rust-cbindgen, nodejs, nasm, fetchpatch
 , debugBuild ? false
