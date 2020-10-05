@@ -38,6 +38,8 @@
 , proprietaryCodecs ? true
 , cupsSupport ? true
 , pulseSupport ? false, libpulseaudio ? null
+, sndioSupport ? false, sndio ? null
+, allocator ? "none"
 
 , channel
 , upstream-info
@@ -146,10 +148,17 @@ let
       ++ optionals gnomeSupport [ gnome.GConf libgcrypt ]
       ++ optionals cupsSupport [ libgcrypt cups ]
       ++ optional pulseSupport libpulseaudio
+      ++ optional sndioSupport sndio
       ++ optionals useOzone [ libdrm wayland mesa_drivers libxkbcommon ];
 
     patches = optionals (versionRange "68" "86") [
       ./patches/nix_plugin_paths_68.patch
+    ] ++ optionals sndioSupport [
+      (fetchpatch {
+        name = "chromium-add-sndio-support.patch";
+        url = "https://gist.githubusercontent.com/S-NA/f60f7735192a4a9e8d675715b3a90457/raw/e613c8c8a63699d7163174449000f1e3c12832c1/chromium-add-sndio-support.patch";
+        sha256 = "1xcqvh8qpbv1syjimph86b8qkkd0hnj28yqdkc149ds5iacydi86";
+      })  
     ] ++ [
       ./patches/remove-webp-include-69.patch
       ./patches/no-build-timestamps.patch
@@ -252,6 +261,7 @@ let
       is_debug = false;
 
       proprietary_codecs = false;
+      use_allocator = allocator;
       use_sysroot = false;
       use_gnome_keyring = gnomeKeyringSupport;
       use_gio = gnomeSupport;
@@ -289,6 +299,8 @@ let
     } // optionalAttrs pulseSupport {
       use_pulseaudio = true;
       link_pulseaudio = true;
+    } // optionalAttrs sndioSupport {
+      use_sndio = true;
     } // optionalAttrs useOzone {
       use_ozone = true;
       ozone_platform_gbm = false;

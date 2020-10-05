@@ -19,6 +19,8 @@
 , useOzone ? false
 , cupsSupport ? true
 , pulseSupport ? config.pulseaudio or stdenv.isLinux
+, sndioSupport ? true
+, allocator ? "none"
 , commandLineArgs ? ""
 }:
 
@@ -35,7 +37,7 @@ let
 
     mkChromiumDerivation = callPackage ./common.nix ({
       inherit channel gnome gnomeSupport gnomeKeyringSupport proprietaryCodecs
-              cupsSupport pulseSupport useOzone;
+              cupsSupport pulseSupport useOzone sndioSupport allocator;
       # TODO: Remove after we can update gn for the stable channel (backward incompatible changes):
       gnChromium = gn.overrideAttrs (oldAttrs: {
         version = "2020-05-19";
