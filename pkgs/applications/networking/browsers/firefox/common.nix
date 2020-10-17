@@ -20,6 +20,7 @@
 
 , alsaSupport ? stdenv.isLinux, alsaLib
 , pulseaudioSupport ? stdenv.isLinux, libpulseaudio
+, sndioSupport ? stdenv.isLinux, sndio
 , ffmpegSupport ? true
 , gtk3Support ? true, gtk2, gtk3, wrapGAppsHook
 , waylandSupport ? true, libxkbcommon
@@ -117,6 +118,12 @@ buildStdenv.mkDerivation ({
       url = "https://src.fedoraproject.org/rpms/firefox/raw/e99b683a352cf5b2c9ff198756859bae408b5d9d/f/firefox-pipewire-0-3.patch";
       sha256 = "0qc62di5823r7ly2lxkclzj9rhg2z7ms81igz44nv0fzv3dszdab";
     })
+    ++ lib.optional sndioSupport
+    (fetchpatch {
+      name   = "firefox-sndio-linux.patch";
+      url    = "https://gist.githubusercontent.com/S-NA/b8ed8fe9b1cb2b56d92f7201a11c4ad7/raw/d8ab846bba8920a17f344c96695ef31835a2f67f/firefox-sndio-linux.patch";
+      sha256 = "19w49izfr8hxkjq57lkh5cvkpbpn94v3cx6i13a31dggm93r2hwf";
+    })
   ++ patches;
 
 
@@ -143,6 +150,7 @@ buildStdenv.mkDerivation ({
   ]
   ++ lib.optional  alsaSupport alsaLib
   ++ lib.optional  pulseaudioSupport libpulseaudio # only headers are needed
+  ++ lib.optional  sndioSupport sndio
   ++ lib.optional  gtk3Support gtk3
   ++ lib.optional  gssSupport kerberos
   ++ lib.optional  ltoSupport llvmPackages.libunwind
@@ -174,6 +182,14 @@ buildStdenv.mkDerivation ({
     substituteInPlace \
       media/webrtc/trunk/webrtc/modules/desktop_capture/desktop_capture_generic_gn/moz.build \
       --replace /usr/include ${pipewire.dev}/include
+  '' + lib.optionalString sndioSupport ''
+    substituteInPlace media/libcubeb/src/cubeb_sndio.c \
+      --replace '"libsndio.so.7.0"' '"${lib.getLib sndio}/lib/libsndio.so.7.1"' \
+      --replace '"libsndio.so"' '"${lib.getLib sndio}/lib/libsndio.so"'
+    substituteInPlace third_party/rust/cubeb-sys/libcubeb/src/cubeb_sndio.c \
+      --replace '"libsndio.so.7.0"' '"${lib.getLib sndio}/lib/libsndio.so.7.1"' \
+      --replace '"libsndio.so"' '"${lib.getLib sndio}/lib/libsndio.so"'
+    sed -i 's/\("files":{\)[^}]*/\1/' third_party/rust/cubeb-sys/.cargo-checksum.json || exit 1
   '' + lib.optionalString (lib.versionAtLeast ffversion "80") ''
     substituteInPlace dom/system/IOUtils.h \
       --replace '#include "nspr/prio.h"'          '#include "prio.h"'
@@ -275,6 +291,7 @@ buildStdenv.mkDerivation ({
 
   ++ flag alsaSupport "alsa"
   ++ flag pulseaudioSupport "pulseaudio"
+  ++ lib.optional sndioSupport "--enable-sndio"
   ++ flag ffmpegSupport "ffmpeg"
   ++ flag gssSupport "negotiateauth"
   ++ flag webrtcSupport "webrtc"
