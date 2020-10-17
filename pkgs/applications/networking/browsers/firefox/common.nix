@@ -8,7 +8,7 @@
 , yasm, libGLU, libGL, sqlite, unzip, makeWrapper
 , hunspell, libXdamage, libevent, libstartup_notification
 , libvpx_1_8
-, icu67, libpng, jemalloc, glib
+, icu67, libpng, glib
 , autoconf213, which, gnused, cargo, rustc
 , rust-cbindgen, nodejs, nasm, fetchpatch
 , gnum4
@@ -27,6 +27,7 @@
 , ltoSupport ? stdenv.isLinux, overrideCC, buildPackages
 , gssSupport ? true, kerberos
 , pipewireSupport ? waylandSupport && webrtcSupport, pipewire
+, jemallocSupport ? true, jemalloc
 
 ## privacy-related options
 
@@ -154,6 +155,7 @@ buildStdenv.mkDerivation ({
   ++ lib.optional  gtk3Support gtk3
   ++ lib.optional  gssSupport kerberos
   ++ lib.optional  ltoSupport llvmPackages.libunwind
+  ++ lib.optional  jemallocSupport jemalloc
   ++ lib.optionals waylandSupport [ libxkbcommon ]
   ++ lib.optionals pipewireSupport [ pipewire ]
   ++ lib.optionals (lib.versionAtLeast ffversion "82") [ gnum4 ]
@@ -270,7 +272,6 @@ buildStdenv.mkDerivation ({
     "--disable-tests"
     "--disable-necko-wifi" # maybe we want to enable this at some point
     "--disable-updater"
-    "--enable-jemalloc"
     "--enable-default-toolkit=${default-toolkit}"
     "--with-libclang-path=${llvmPackages.libclang}/lib"
     "--with-system-nspr"
@@ -294,6 +295,7 @@ buildStdenv.mkDerivation ({
   ++ lib.optional sndioSupport "--enable-sndio"
   ++ flag ffmpegSupport "ffmpeg"
   ++ flag gssSupport "negotiateauth"
+  ++ flag jemallocSupport "jemalloc"
   ++ flag webrtcSupport "webrtc"
   ++ flag crashreporterSupport "crashreporter"
   ++ lib.optional drmSupport "--enable-eme=widevine"
