@@ -96,7 +96,7 @@ let
   # clang LTO on Darwin is broken so the stdenv is not being changed.
   llvmPackages = if stdenv.isDarwin
                  then buildPackages.llvmPackages
-                 else buildPackages.llvmPackages_10;
+                 else buildPackages.llvmPackages_11;
 
   # When LTO for Darwin is fixed, the following will need updating as lld
   # doesn't work on it. For now it is fine since ltoSupport implies no Darwin.
