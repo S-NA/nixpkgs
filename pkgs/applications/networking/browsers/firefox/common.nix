@@ -260,6 +260,7 @@ buildStdenv.mkDerivation ({
     "--with-system-nspr"
     "--with-system-nss"
   ]
+  ++ lib.optional (buildStdenv.isAarch64 || buildStdenv.isi686 || buildStdenv.isx86_64) "--enable-rust-simd"
   ++ lib.optional (buildStdenv.isDarwin) "--disable-xcode-checks"
   ++ lib.optional (!ltoSupport) "--with-clang-path=${llvmPackages.clang}/bin/clang"
   # LTO is done using clang and lld on Linux.
