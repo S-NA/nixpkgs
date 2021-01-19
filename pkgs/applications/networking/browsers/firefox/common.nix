@@ -1,5 +1,5 @@
 { pname, ffversion, meta, updateScript ? null
-, src, unpackPhase ? null, patches ? []
+, src, profdata ? null, unpackPhase ? null, patches ? []
 , extraNativeBuildInputs ? [], extraConfigureFlags ? [], extraMakeFlags ? [] }:
 
 { lib, stdenv, pkg-config, pango, perl, python3, zip
@@ -12,7 +12,11 @@
 , autoconf213, which, gnused, rustPackages, rustPackages_1_45
 , rust-cbindgen, nodejs, nasm, fetchpatch
 , gnum4
+
+# build-time configuration options
 , debugBuild ? false
+, ltoSupport ? stdenv.isLinux, overrideCC, buildPackages
+, pgoSupport ? stdenv.isLinux
 
 ### optionals
 
@@ -23,7 +27,6 @@
 , ffmpegSupport ? true
 , gtk3Support ? true, gtk2, gtk3, wrapGAppsHook
 , waylandSupport ? true, libxkbcommon
-, ltoSupport ? stdenv.isLinux, overrideCC, buildPackages
 , gssSupport ? true, kerberos
 , pipewireSupport ? waylandSupport && webrtcSupport, pipewire
 
@@ -74,6 +77,7 @@
 assert stdenv.cc.libc or null != null;
 assert pipewireSupport -> !waylandSupport || !webrtcSupport -> throw "pipewireSupport requires both wayland and webrtc support.";
 assert ltoSupport -> stdenv.isDarwin -> throw "LTO is broken on Darwin (see PR#19312).";
+assert pgoSupport -> profdata == null -> throw "pgoSupport requires upstream provided profdata.tar.xz";
 
 let
   flag = tf: x: [(if tf then "--enable-${x}" else "--disable-${x}")];
@@ -118,6 +122,10 @@ buildStdenv.mkDerivation ({
   version = ffversion;
 
   inherit src unpackPhase meta;
+
+  postUnpack = lib.optionalString pgoSupport ''
+    tar xf $profdata
+  '';
 
   patches = [
     ./env_var_for_system_dir.patch
@@ -296,9 +304,15 @@ buildStdenv.mkDerivation ({
   #   https://bugzilla.mozilla.org/show_bug.cgi?id=1538724
   # elf-hack is broken when using clang+lld:
   #   https://bugzilla.mozilla.org/show_bug.cgi?id=1482204
-  ++ lib.optional ltoSupport "--enable-lto"
+  ++ lib.optional (ltoSupport && !pgoSupport) "--enable-lto"
   ++ lib.optional (ltoSupport && (buildStdenv.isAarch32 || buildStdenv.isi686 || buildStdenv.isx86_64)) "--disable-elf-hack"
   ++ lib.optional (ltoSupport && !buildStdenv.isDarwin) "--enable-linker=lld"
+  ++ lib.optionals (ltoSupport && pgoSupport) [
+    "--enable-lto=cross"
+    "--enable-profile-use=cross"
+    "--with-pgo-jarlog=./en-US.log"
+    "--with-pgo-profile-path=merged.profdata"
+  ]
 
   ++ flag alsaSupport "alsa"
   ++ flag pulseaudioSupport "pulseaudio"
